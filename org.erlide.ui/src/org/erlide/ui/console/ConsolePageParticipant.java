@@ -108,7 +108,7 @@ public class ConsolePageParticipant implements IConsolePageParticipant,
 		fPage = page;
 		fConsole = (ErlangConsole) console;
 
-		fRemoveTerminated = new ConsoleRemoveLaunchAction(fConsole.getBackend());
+		fRemoveTerminated = new ConsoleRemoveLaunchAction();
 		fRemoveAllTerminated = new ConsoleRemoveAllTerminatedAction();
 		fTerminate = new ConsoleTerminateAction(fConsole);
 		fStdOut = new ShowStandardOutAction();

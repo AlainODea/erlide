@@ -140,7 +140,7 @@ public class ErlangConsolePage implements IPageBookViewPage, IAdaptable,
 		}
 	};
 
-	public ErlangConsolePage(IConsoleView view, ErlangConsole console) {
+	public ErlangConsolePage(ErlangConsole console, IConsoleView view) {
 		super();
 		fConsole = console;
 		fConsoleView = view;

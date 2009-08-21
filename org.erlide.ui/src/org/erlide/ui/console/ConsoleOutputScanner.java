@@ -71,11 +71,11 @@ public class ConsoleOutputScanner implements ITokenScanner {
 
 	public void setRange(IDocument document, int offset, int length) {
 		this.offset = offset;
-		if (document instanceof ErlConsoleDocument) {
-			// ErlConsoleDocument doc = (ErlConsoleDocument) document;
-			// BackendShell shell = doc.getShell();
-			// shell.getRequests(offset, length);
-		}
+		// if (document instanceof ErlConsoleDocument) {
+		// // ErlConsoleDocument doc = (ErlConsoleDocument) document;
+		// // BackendShell shell = doc.getShell();
+		// // shell.getRequests(offset, length);
+		// }
 		try {
 			text = document.get(offset, length);
 		} catch (BadLocationException e) {

@@ -11,17 +11,18 @@
 package org.erlide.ui.console;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class ErlangConsoleHistory {
 	private final List<String> history;
-	private int navIndex;
+	private int navIndex = -1;
 
 	public ErlangConsoleHistory() {
 		history = new ArrayList<String>();
 	}
 
-	public void addToHistory(final String in) {
+	public void add(final String in) {
 		history.add(in);
 		if (history.size() > 50) {
 			history.remove(0);
@@ -62,6 +63,11 @@ public class ErlangConsoleHistory {
 
 	public void gotoFirst() {
 		navIndex = 0;
+	}
+
+	@Override
+	public String toString() {
+		return Arrays.toString(history.toArray());
 	}
 
 }

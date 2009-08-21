@@ -28,7 +28,6 @@ import org.eclipse.ui.console.IOConsole;
 import org.eclipse.ui.console.IOConsoleInputStream;
 import org.eclipse.ui.console.IOConsoleOutputStream;
 import org.eclipse.ui.part.IPageBookViewPage;
-import org.erlide.jinterface.backend.Backend;
 import org.erlide.jinterface.backend.BackendShell;
 import org.erlide.jinterface.backend.BackendShellListener;
 import org.erlide.jinterface.backend.IDisposable;
@@ -39,22 +38,15 @@ import org.erlide.runtime.backend.ErlideBackend;
 public class ErlangConsole extends IOConsole implements BackendShellListener,
 		IDisposable {
 
-	private Backend backend;
-	private final IOConsoleOutputStream stdout;
-	private final IOConsoleOutputStream stderr;
-	private final IOConsoleOutputStream output;
-	private final BackendShell shell;
-
-	// private final ErlangConsolePartitioner partitioner;
+	private IOConsoleOutputStream stdout;
+	private IOConsoleOutputStream stderr;
+	private IOConsoleOutputStream output;
+	private BackendShell shell;
 
 	public ErlangConsole(ErlideBackend backend, String name,
 			ImageDescriptor descriptor) {
 		super(name, descriptor);
 
-		// partitioner = new ErlangConsolePartitioner();
-		// partitioner.connect(getDocument());
-
-		this.backend = backend;
 		shell = backend.getShell("main");
 		shell.addListener(this);
 
@@ -92,19 +84,6 @@ public class ErlangConsole extends IOConsole implements BackendShellListener,
 		}
 	}
 
-	// @Override
-	// protected IConsoleDocumentPartitioner getPartitioner() {
-	// return partitioner;
-	// }
-	//
-	// @Override
-	// public void clearConsole() {
-	// if (partitioner != null) {
-	// // partitioner.clearBuffer();
-	// }
-	// super.clearConsole();
-	// }
-
 	public void shellEvent(BackendShell aShell, IoRequest req) {
 		if (aShell != shell || req == null) {
 			return;
@@ -131,25 +110,11 @@ public class ErlangConsole extends IOConsole implements BackendShellListener,
 
 	@Override
 	public void dispose() {
-		try {
-			stdout.close();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		try {
-			stderr.close();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		try {
-			output.close();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		backend = null;
+		stdout = null;
+		stderr = null;
+		output = null;
+		shell = null;
+		super.dispose();
 	}
 
 	private class InputReadJob extends Job {

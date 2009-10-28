@@ -169,11 +169,12 @@ public class TermParser {
 
 			result.start = i;
 			result.end = i;
-			if (c <= 'z' && c >= 'a') {
+			if ((c <= 'z' && c >= 'a') || c == '#') {
 				result.kind = TokenKind.ATOM;
-				while (result.end < s.length() && (c >= 'a' && c <= 'z')
-						|| (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9')
-						|| c == '_') {
+				while ((result.end < s.length())
+						&& ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
+								|| (c >= '0' && c <= '9') || c == '_'
+								|| c == '@' || c == '.' || c == '<' || c == '>' || c == '#')) {
 					c = s.charAt(result.end++);
 				}
 				result.end--;
@@ -234,6 +235,10 @@ public class TermParser {
 			} else {
 				result.kind = TokenKind.UNKNOWN;
 				result.end = result.start + 1;
+			}
+			if (result.start < 0 || result.end < 0) {
+				System.out.println(">>> " + result.start + " " + result.end
+						+ " : " + result.kind + "..." + s + "<<<");
 			}
 			result.text = s.substring(result.start, result.end);
 			final char ch = result.text.charAt(0);

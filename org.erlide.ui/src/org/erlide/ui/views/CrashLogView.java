@@ -3,7 +3,10 @@ package org.erlide.ui.views;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.text.DateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 
 import org.eclipse.jface.action.Action;
@@ -34,9 +37,14 @@ import org.eclipse.ui.IWorkbenchActionConstants;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.part.ViewPart;
 import org.erlide.core.erlang.util.ErlideUtil;
+import org.erlide.jinterface.util.Bindings;
+import org.erlide.jinterface.util.ErlUtils;
 import org.erlide.jinterface.util.ParserException;
 import org.erlide.jinterface.util.TermParser;
 
+import com.ericsson.otp.erlang.OtpErlangAtom;
+import com.ericsson.otp.erlang.OtpErlangException;
+import com.ericsson.otp.erlang.OtpErlangList;
 import com.ericsson.otp.erlang.OtpErlangObject;
 import com.ericsson.otp.erlang.OtpErlangTuple;
 
@@ -81,26 +89,50 @@ public class CrashLogView extends ViewPart {
 	}
 
 	public static class LogItem {
-		OtpErlangObject data;
+		Date time;
+		List<OtpErlangObject> processes;
+		List<OtpErlangObject> ets;
+		List<OtpErlangObject> memory;
+		List<OtpErlangObject> stats;
 
 		public LogItem(String item) {
 			int x = item.indexOf("{erlide_monitor,");
 			try {
 				String str = item.substring(x, item.length() - 1);
-				OtpErlangTuple tuple = (OtpErlangTuple) TermParser.parse(str);
-				data = tuple.elementAt(2);
+				OtpErlangTuple data = (OtpErlangTuple) TermParser.parse(str);
+				OtpErlangList elems = (OtpErlangList) data.elementAt(2);
+				for (OtpErlangObject elem : elems.elements()) {
+					fillData((OtpErlangTuple) elem);
+				}
 			} catch (ParserException e) {
 				System.out.println(e.getMessage());
-				data = null;
 			}
 		}
 
-		@Override
-		public String toString() {
-			if (data == null) {
-				return "???";
+		private void fillData(OtpErlangTuple elem) {
+			OtpErlangAtom akey = (OtpErlangAtom) elem.elementAt(0);
+			OtpErlangObject val = elem.elementAt(1);
+			String key = akey.atomValue();
+			if ("time".equals(key)) {
+				try {
+					Bindings b = ErlUtils.match("{{Y,Mo,D},{H,M,S}}", val);
+					Calendar c = Calendar.getInstance();
+					c.set(b.getInt("Y"), b.getInt("Mo"), b.getInt("D"), b.getInt("H"), b.getInt("M"), b.getInt("S"));
+					time = c.getTime();
+				} catch (ParserException e) {
+					e.printStackTrace();
+				} catch (OtpErlangException e) {
+					e.printStackTrace();
+				}
+			} else if ("processes".equals(key)) {
+
+			} else if ("ets".equals(key)) {
+
+			} else if ("memory".equals(key)) {
+
+			} else if ("stats".equals(key)) {
+
 			}
-			return data.toString();
 		}
 	}
 
@@ -140,6 +172,16 @@ public class CrashLogView extends ViewPart {
 
 	static class ViewLabelProvider extends LabelProvider implements
 			ITableLabelProvider {
+		
+		@Override
+		public String getText(Object element) {
+			if(element instanceof LogItem){
+				LogItem item = (LogItem) element;
+				return DateFormat.getDateTimeInstance().format(item.time);
+			}
+			return super.getText(element);
+		}
+		
 		public String getColumnText(final Object obj, final int index) {
 			return getText(obj);
 		}
@@ -257,6 +299,7 @@ public class CrashLogView extends ViewPart {
 	protected void loadLogFile() {
 		FileDialog dlg = new FileDialog(getViewSite().getShell());
 		dlg.setFilterPath(ErlideUtil.getReportLocation());
+		dlg.setFilterExtensions(new String[] { "*.txt" });
 		String name = dlg.open();
 		viewer.setInput(name);
 	}

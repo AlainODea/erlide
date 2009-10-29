@@ -5,6 +5,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.text.DateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
@@ -21,11 +22,10 @@ import org.eclipse.jface.viewers.IDoubleClickListener;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredContentProvider;
 import org.eclipse.jface.viewers.IStructuredSelection;
-import org.eclipse.jface.viewers.ITableLabelProvider;
+import org.eclipse.jface.viewers.ITreeContentProvider;
 import org.eclipse.jface.viewers.LabelProvider;
-import org.eclipse.jface.viewers.TableViewer;
+import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.jface.viewers.Viewer;
-import org.eclipse.jface.viewers.ViewerSorter;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.widgets.Composite;
@@ -49,16 +49,17 @@ import com.ericsson.otp.erlang.OtpErlangObject;
 import com.ericsson.otp.erlang.OtpErlangTuple;
 
 public class CrashLogView extends ViewPart {
-	TableViewer viewer;
+
+	TreeViewer viewer;
 	private Action openFileaction;
 	private Action action2;
 	Action doubleClickAction;
 
 	public static class CrashLog {
-		List<LogItem> items;
+		List<LogEntry> items;
 
 		public CrashLog(String newInput) throws IOException {
-			items = new ArrayList<LogItem>();
+			items = new ArrayList<LogEntry>();
 			BufferedReader in = new BufferedReader(new FileReader(newInput));
 			String line;
 			String item = "";
@@ -69,7 +70,7 @@ public class CrashLogView extends ViewPart {
 					item += line;
 					if (item.contains("}.")) {
 						insideItem = false;
-						items.add(new LogItem(item));
+						items.add(new LogEntry(item));
 						item = "";
 					}
 				} else {
@@ -82,20 +83,20 @@ public class CrashLogView extends ViewPart {
 			}
 		}
 
-		public LogItem[] getItems() {
-			return items.toArray(new LogItem[items.size()]);
+		public LogEntry[] getItems() {
+			return items.toArray(new LogEntry[items.size()]);
 		}
 
 	}
 
-	public static class LogItem {
+	public static class LogEntry {
 		Date time;
 		List<OtpErlangObject> processes;
 		List<OtpErlangObject> ets;
 		List<OtpErlangObject> memory;
 		List<OtpErlangObject> stats;
 
-		public LogItem(String item) {
+		public LogEntry(String item) {
 			int x = item.indexOf("{erlide_monitor,");
 			try {
 				String str = item.substring(x, item.length() - 1);
@@ -117,7 +118,8 @@ public class CrashLogView extends ViewPart {
 				try {
 					Bindings b = ErlUtils.match("{{Y,Mo,D},{H,M,S}}", val);
 					Calendar c = Calendar.getInstance();
-					c.set(b.getInt("Y"), b.getInt("Mo"), b.getInt("D"), b.getInt("H"), b.getInt("M"), b.getInt("S"));
+					c.set(b.getInt("Y"), b.getInt("Mo"), b.getInt("D"), b
+							.getInt("H"), b.getInt("M"), b.getInt("S"));
 					time = c.getTime();
 				} catch (ParserException e) {
 					e.printStackTrace();
@@ -125,15 +127,31 @@ public class CrashLogView extends ViewPart {
 					e.printStackTrace();
 				}
 			} else if ("processes".equals(key)) {
-
+				OtpErlangObject[] ps = ((OtpErlangList) val).elements();
+				processes = Arrays.asList(ps);
 			} else if ("ets".equals(key)) {
-
+				OtpErlangObject[] ps = ((OtpErlangList) val).elements();
+				ets = Arrays.asList(ps);
 			} else if ("memory".equals(key)) {
-
+				OtpErlangObject[] ps = ((OtpErlangList) val).elements();
+				memory = Arrays.asList(ps);
 			} else if ("stats".equals(key)) {
-
+				OtpErlangObject[] ps = ((OtpErlangList) val).elements();
+				stats = Arrays.asList(ps);
 			}
 		}
+	}
+
+	public static class LogItem {
+
+		private final String name;
+		private final List<OtpErlangObject> items;
+
+		public LogItem(String string, List<OtpErlangObject> items) {
+			name = string;
+			this.items = items;
+		}
+
 	}
 
 	/*
@@ -144,7 +162,8 @@ public class CrashLogView extends ViewPart {
 	 * example).
 	 */
 
-	static class ViewContentProvider implements IStructuredContentProvider {
+	static class ViewContentProvider implements IStructuredContentProvider,
+			ITreeContentProvider {
 		private CrashLog log = null;
 
 		public void inputChanged(final Viewer v, final Object oldInput,
@@ -168,36 +187,61 @@ public class CrashLogView extends ViewPart {
 			}
 			return log.getItems();
 		}
+
+		public Object[] getChildren(Object parent) {
+			if (parent instanceof CrashLog) {
+				return ((CrashLog) parent).getItems();
+			}
+			if (parent instanceof LogEntry) {
+				LogEntry entry = (LogEntry) parent;
+				return new LogItem[] {
+						new LogItem("processes", entry.processes),
+						new LogItem("ets", entry.ets),
+						new LogItem("memory", entry.memory),
+						new LogItem("statistics", entry.stats) };
+			}
+			if (parent instanceof LogItem) {
+				LogItem item = (LogItem) parent;
+				List<String> parts = new ArrayList<String>();
+				for (OtpErlangObject el : item.items) {
+					parts.add(el.toString());
+				}
+				return parts.toArray();
+			}
+			return new Object[0];
+		}
+
+		public Object getParent(Object element) {
+			return null;
+		}
+
+		public boolean hasChildren(Object element) {
+			return getChildren(element).length > 0;
+		}
 	}
 
-	static class ViewLabelProvider extends LabelProvider implements
-			ITableLabelProvider {
-		
+	static class ViewLabelProvider extends LabelProvider {
+
 		@Override
 		public String getText(Object element) {
-			if(element instanceof LogItem){
+			if (element instanceof LogEntry) {
+				LogEntry item = (LogEntry) element;
+				return "Entry @ "
+						+ DateFormat.getDateTimeInstance().format(item.time);
+			}
+			if (element instanceof LogItem) {
 				LogItem item = (LogItem) element;
-				return DateFormat.getDateTimeInstance().format(item.time);
+				return item.name;
 			}
 			return super.getText(element);
-		}
-		
-		public String getColumnText(final Object obj, final int index) {
-			return getText(obj);
-		}
-
-		public Image getColumnImage(final Object obj, final int index) {
-			return getImage(obj);
 		}
 
 		@Override
 		public Image getImage(final Object obj) {
-			return PlatformUI.getWorkbench().getSharedImages().getImage(
-					ISharedImages.IMG_OBJ_ELEMENT);
+			return null;
+			// return PlatformUI.getWorkbench().getSharedImages().getImage(
+			// ISharedImages.IMG_OBJ_ELEMENT);
 		}
-	}
-
-	static class NameSorter extends ViewerSorter {
 	}
 
 	/**
@@ -212,11 +256,9 @@ public class CrashLogView extends ViewPart {
 	 */
 	@Override
 	public void createPartControl(final Composite parent) {
-		viewer = new TableViewer(parent, SWT.MULTI | SWT.H_SCROLL
-				| SWT.V_SCROLL);
+		viewer = new TreeViewer(parent, SWT.MULTI | SWT.H_SCROLL | SWT.V_SCROLL);
 		viewer.setContentProvider(new ViewContentProvider());
 		viewer.setLabelProvider(new ViewLabelProvider());
-		viewer.setSorter(new NameSorter());
 		viewer.setInput(getViewSite());
 		makeActions();
 		hookContextMenu();

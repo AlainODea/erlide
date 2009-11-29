@@ -31,6 +31,8 @@
 			<arg value="ebin"/>
 			<arg value="-I"/>
 			<arg value="include"/>
+			<arg value="-I"/>
+			<arg value="../org.erlide.kernel.ide/include"/>
 			<arg value="+debug_info"/>
 			<fileset dir="src">
 				<include name="**/*.erl"/>

@@ -657,7 +657,7 @@ public class FilteredModulesSelectionDialog extends
 
 		@Override
 		public void setPattern(final String stringPattern) {
-			if ("".equals(stringPattern)) {
+			if (stringPattern.isEmpty()) {
 				super.setPattern(stringPattern);
 			} else {
 				super.setPattern("*" + stringPattern + "*");

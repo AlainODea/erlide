@@ -4,6 +4,9 @@
 <!-- ===================================================================== -->
 <project name="Build specific targets and properties" default="noDefault">
 
+    <property file="../local.build.properties"/>
+    <property file="../build.properties"/>
+
 	<!-- ===================================================================== -->
 	<!-- Default target                                                        -->
 	<!-- ===================================================================== -->

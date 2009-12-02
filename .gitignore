@@ -3,4 +3,5 @@
 workspaces
 bin
 *.orig
+local.build.properties
 
